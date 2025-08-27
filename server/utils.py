@@ -44,7 +44,7 @@ def get_ChatOpenAI(
         streaming=streaming,
         verbose=verbose,
         callbacks=callbacks,
-        openai_api_key='sk-79fcaf8f7fe24839b4abcbdd9c9e8980',
+        openai_api_key='',
         openai_api_base="https://dashscope.aliyuncs.com/compatible-mode/v1",
         model_name="qwen-plus",
         temperature=0.7,
