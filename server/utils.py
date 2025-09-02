@@ -16,9 +16,8 @@ from fastapi import FastAPI
 from pathlib import Path
 from typing import Literal, Optional, Callable, Generator, Dict, Any, Awaitable, Union, Tuple
 from langchain.chat_models import ChatOpenAI
-from langchain.llms import OpenAI, AzureOpenAI, Anthropic
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
+from configs.model_config import QWEN_API_KEY,QWEN_LINK,EMBEDDING_API_KEY,EMBEDDING_LINK
 #wrap_done 的作用是确保：无论 task_fn 成功或出错，最终都会 event.set() 通知外部，“我这个任务结束了”，这样不会卡住等待的逻辑。
 
 #该函数的作用就是当被包裹的函数出现异常的时候，其他的任务还可以正常进行。
@@ -30,6 +29,7 @@ async def wrap_done(fn:Awaitable,event:asyncio.Event):
         print(f'{e.__class__.__name__}: {msg}')
     finally:
         event.set()
+os.environ["OPENAI_API_KEY"] = QWEN_API_KEY
 
 def get_ChatOpenAI(
         model_name: str,
@@ -44,8 +44,8 @@ def get_ChatOpenAI(
         streaming=streaming,
         verbose=verbose,
         callbacks=callbacks,
-        openai_api_key='',
-        openai_api_base="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        openai_api_key=QWEN_API_KEY,
+        openai_api_base=QWEN_LINK,
         model_name="qwen-plus",
         temperature=0.7,
         max_tokens=max_tokens,

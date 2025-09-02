@@ -55,3 +55,5 @@ if __name__ == "__main__":
         print('database tables reseted!')
 
 #python init_database.py --create-tables
+
+#该文件执行上述命令即可创建数据库文件；数据库表结构信息；

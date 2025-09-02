@@ -18,3 +18,7 @@ RERANKER_MODEL = ""
 USE_RERANKER = False
 RERANKER_MAX_LENGTH = 1024
 MODEL_PATH = None
+QWEN_API_KEY = 'sk-'
+EMBEDDING_API_KEY = 'sk-'
+QWEN_LINK = 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+EMBEDDING_LINK = 'https://api.siliconflow.cn/v1/embeddings'

@@ -7,7 +7,7 @@ from configs import (DEFAULT_VS_TYPE, EMBEDDING_MODEL,
                      logger, log_verbose, )
 from server.utils import BaseResponse, ListResponse, run_in_thread_pool
 from server.knowledge_base.utils import (validate_kb_name, list_files_from_folder, get_file_path,
-                                         files2docs_in_thread, KnowledgeFile)
+                                         files2docs_in_thread, KnowledgeFile,files2docs_in_thread_)
 from fastapi.responses import FileResponse
 from sse_starlette import EventSourceResponse
 from pydantic import Json
@@ -36,7 +36,13 @@ def search_docs(
     if kb is not None:
         if query:
             docs = kb.search_docs(query, top_k, score_threshold)
-            data = [DocumentWithVSId(**x[0].dict(), score=x[1], id=x[0].metadata.get("id")) for x in docs]
+            #data = [DocumentWithVSId(**x[0].dict(), score=x[1], id=x[0].metadata.get("pk")) for x in docs]
+            data = []
+            for doc, score in docs:
+                doc_data = doc.dict()  # 拿到字典
+                doc_data.pop("id", None)  # 删除 dict 中的 id 字段
+                data.append(DocumentWithVSId(**doc_data, score=score, id=doc.metadata.get("pk")))
+            print(data)
         elif file_name or metadata:
             data = kb.list_docs(file_name=file_name, metadata=metadata)
     return data
@@ -142,9 +148,9 @@ def upload_docs(
         chunk_size: int = Form(CHUNK_SIZE, description="知识库中单段文本最大长度"),
         chunk_overlap: int = Form(OVERLAP_SIZE, description="知识库中相邻文本重合长度"),
         zh_title_enhance: bool = Form(ZH_TITLE_ENHANCE, description="是否开启中文标题加强"),
-        docs: Json = Form({}, description="自定义的docs，需要转为json字符串",
+        docs: Json = Form({}, description="自定义的docs，需要转为json字符串；跳过文件解析，直接用外部构造的 Document 作为向量化输入。",
                           examples=[{"test.txt": [Document(page_content="custom doc")]}]),
-        not_refresh_vs_cache: bool = Form(False, description="暂不保存向量库（用于FAISS）"),
+        not_refresh_vs_cache: bool = Form(True, description="不涉及本地保存，FAISS的话本地保存。"),
 ) -> BaseResponse:
     """
     API接口：上传文件，并/或向量化
@@ -278,7 +284,7 @@ def update_docs(
 
     # 从文件生成docs，并进行向量化。
     # 这里利用了KnowledgeFile的缓存功能，在多线程中加载Document，然后传给KnowledgeFile
-    for status, result in files2docs_in_thread(kb_files,
+    for status, result in files2docs_in_thread_(kb_files,
                                                chunk_size=chunk_size,
                                                chunk_overlap=chunk_overlap,
                                                zh_title_enhance=zh_title_enhance):
@@ -407,3 +413,10 @@ def recreate_vector_store(
                 kb.save_vector_store()
 
     return EventSourceResponse(output())
+
+'''
+docs:为list，list里面是tuple。
+一个为Document，另一个为float。
+
+
+'''

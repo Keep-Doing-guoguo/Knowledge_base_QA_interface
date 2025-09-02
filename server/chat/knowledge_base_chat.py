@@ -83,7 +83,7 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
                                        knowledge_base_name=knowledge_base_name,
                                        top_k=top_k,
                                        score_threshold=score_threshold)
-
+        docs_ = search_docs(query=query,knowledge_base_name=knowledge_base_name,top_k=top_k,score_threshold=score_threshold)
         # 加入reranker
         if USE_RERANKER:
             reranker_model_path = MODEL_PATH["reranker"].get(RERANKER_MODEL,"BAAI/bge-reranker-large")

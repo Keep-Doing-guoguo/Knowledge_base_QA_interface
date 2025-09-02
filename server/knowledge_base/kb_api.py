@@ -41,11 +41,11 @@ def create_kb(knowledge_base_name: str = Body(..., examples=["samples"]),
 
 def delete_kb(
     knowledge_base_name: str = Body(..., examples=["samples"])
-    ) -> BaseResponse:
+    ) -> BaseResponse:#这里删除只是会删除sql和milvus的数据内容
     # Delete selected knowledge base
     if not validate_kb_name(knowledge_base_name):
         return BaseResponse(code=403, msg="Don't attack me")
-    knowledge_base_name = urllib.parse.unquote(knowledge_base_name)
+    knowledge_base_name = urllib.parse.unquote(knowledge_base_name)#解析链接里面的内容
 
     kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
 
@@ -53,8 +53,8 @@ def delete_kb(
         return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
 
     try:
-        status = kb.clear_vs()
-        status = kb.drop_kb()
+        status = kb.clear_vs()#清空向量库
+        status = kb.drop_kb()#清空数据库
         if status:
             return BaseResponse(code=200, msg=f"成功删除知识库 {knowledge_base_name}")
     except Exception as e:

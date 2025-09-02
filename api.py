@@ -24,9 +24,6 @@ from server.embeddings_api import embed_texts_endpoint
 from server.utils import (BaseResponse, ListResponse, FastAPI, MakeFastAPIOffline,get_prompt_template)
 from typing import List, Literal
 
-
-
-
 async def document():
     return RedirectResponse(url="/docs")
 
@@ -36,9 +33,7 @@ def create_app(run_mode: str = None):
         title="API Server",
     )
     MakeFastAPIOffline(app)
-    # Add CORS middleware to allow all origins
-    # 在config.py中设置OPEN_DOMAIN=True，允许跨域
-    # set OPEN_DOMAIN=True in config.py to allow cross-domain
+
 
     mount_app_routes(app, run_mode=run_mode)
     return app
@@ -55,13 +50,11 @@ def mount_app_routes(app: FastAPI, run_mode: str = None):
     app.post("/other/embed_texts",
             tags=["Other"],
             summary="将文本向量化，支持本地模型和在线模型",
-            )(embed_texts_endpoint)
+            )(embed_texts_endpoint)#该接口已经测试，可以正常运行。
 
 
 def mount_knowledge_routes(app: FastAPI):
     from server.chat.knowledge_base_chat import knowledge_base_chat
-
-
     from server.knowledge_base.kb_api import list_kbs, create_kb, delete_kb
     from server.knowledge_base.kb_doc_api import (list_files, upload_docs, delete_docs,
                                                 update_docs, download_doc, recreate_vector_store,
@@ -70,83 +63,64 @@ def mount_knowledge_routes(app: FastAPI):
 
     app.post("/chat/knowledge_base_chat",
              tags=["Chat"],
-             summary="与知识库对话")(knowledge_base_chat)
-
-
-
-
+             summary="与知识库对话")(knowledge_base_chat)#该接口可以使用，但是并没有检索到内容。
 
     # Tag: Knowledge Base Management
     app.get("/knowledge_base/list_knowledge_bases",
             tags=["Knowledge Base Management"],
             response_model=ListResponse,
-            summary="获取知识库列表")(list_kbs)
+            summary="获取知识库列表")(list_kbs)#该接口可以正常使用
 
     app.post("/knowledge_base/create_knowledge_base",
              tags=["Knowledge Base Management"],
              response_model=BaseResponse,
              summary="创建知识库"
-             )(create_kb)
+             )(create_kb)#该接口创建好知识库后，会添加到数据库里面。该接口可以正常使用。
 
     app.post("/knowledge_base/delete_knowledge_base",
              tags=["Knowledge Base Management"],
              response_model=BaseResponse,
              summary="删除知识库"
-             )(delete_kb)
+             )(delete_kb)#从数据库中删除该知识库。该接口可以正常使用。
 
     app.get("/knowledge_base/list_files",
             tags=["Knowledge Base Management"],
             response_model=ListResponse,
             summary="获取知识库内的文件列表"
-            )(list_files)
+            )(list_files)#该接口可以正常使用
 
     app.post("/knowledge_base/search_docs",
              tags=["Knowledge Base Management"],
              response_model=List[DocumentWithVSId],
-             summary="搜索知识库"
-             )(search_docs)
-
-    app.post("/knowledge_base/update_docs_by_id",
-             tags=["Knowledge Base Management"],
-             response_model=BaseResponse,
-             summary="直接更新知识库文档"
-             )(update_docs_by_id)
-
+             summary="搜索知识库；通过问题，在知识库中检索到相关的信息。"
+             )(search_docs)#该接口可以正常使用
 
     app.post("/knowledge_base/upload_docs",
              tags=["Knowledge Base Management"],
              response_model=BaseResponse,
              summary="上传文件到知识库，并/或进行向量化"
-             )(upload_docs)
+             )(upload_docs)#该接口可以正常使用；针对的是单线程的情况。
 
     app.post("/knowledge_base/delete_docs",
              tags=["Knowledge Base Management"],
              response_model=BaseResponse,
              summary="删除知识库内指定文件"
-             )(delete_docs)
+             )(delete_docs)#该接口可以正常使用
 
     app.post("/knowledge_base/update_info",
              tags=["Knowledge Base Management"],
              response_model=BaseResponse,
              summary="更新知识库介绍"
-             )(update_info)
+             )(update_info)#该接口可以正常使用
     app.post("/knowledge_base/update_docs",
              tags=["Knowledge Base Management"],
              response_model=BaseResponse,
              summary="更新现有文件到知识库"
-             )(update_docs)
+             )(update_docs)#该接口可以正常使用，该接口被upload_docs调用
 
     app.get("/knowledge_base/download_doc",
             tags=["Knowledge Base Management"],
-            summary="下载对应的知识文件")(download_doc)
-
-    app.post("/knowledge_base/recreate_vector_store",
-             tags=["Knowledge Base Management"],
-             summary="根据content中文档重建向量库，流式输出处理进度。"
-             )(recreate_vector_store)
-
-
-
+            summary="下载对应的知识文件")(download_doc)#该接口将会从服务器下载文件；该接口可以正常使用；
 
 
 def run_api(host, port, **kwargs):

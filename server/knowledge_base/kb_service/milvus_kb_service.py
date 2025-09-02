@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional
-
+import uuid
 from langchain.schema import Document
 from langchain.vectorstores.milvus import Milvus
 
@@ -58,8 +58,8 @@ class MilvusKBService(KBService):
                              )
 
     def do_init(self):
-        pass
-        #self._load_milvus()
+
+        self._load_milvus()
 
     def do_drop_kb(self):
         if self.milvus.col:
@@ -71,6 +71,7 @@ class MilvusKBService(KBService):
         embed_func = EmbeddingsFunAdapter(self.embed_model)
         embeddings = embed_func.embed_query(query)
         docs = self.milvus.similarity_search_with_score_by_vector(embeddings, top_k)
+        print(docs)
         return score_threshold_process(score_threshold, top_k, docs)
 
     def do_add_doc(self, docs: List[Document], **kwargs) -> List[Dict]:
@@ -82,8 +83,11 @@ class MilvusKBService(KBService):
                 doc.metadata.setdefault(field, "")
             doc.metadata.pop(self.milvus._text_field, None)
             doc.metadata.pop(self.milvus._vector_field, None)
-
-        ids = self.milvus.add_documents(docs)
+            # 如果 collection 需要手动 id，就生成 uuid
+        ids = kwargs.get("ids")
+        if ids is None:
+            ids = [str(uuid.uuid4()) for _ in docs]
+        ids = self.milvus.add_documents(docs,ids=ids)
         doc_infos = [{"id": id, "metadata": doc.metadata} for id, doc in zip(ids, docs)]
         return doc_infos
 
@@ -101,14 +105,23 @@ class MilvusKBService(KBService):
 
 
 if __name__ == '__main__':
+    pass
     # 测试建表使用
     from server.db.base import Base, engine
 
-    Base.metadata.create_all(bind=engine)
-    milvusService = MilvusKBService("samples")
-    # milvusService.add_doc(KnowledgeFile("README.md", "test"))
-
-    print(milvusService.get_doc_by_ids(["444022434274215486"]))
+    #Base.metadata.create_all(bind=engine)
+    #milvusService = MilvusKBService("samples",'BAAI/bge-large-zh-v1.5')
+    #milvusService.add_doc(KnowledgeFile("README.md", "samples"))
+    # knowledge_base_name = 'test'
+    # top_k = 3
+    # score_threshold = 0.6
+    # query = '介绍新乡工程学院'
+    # mil = MilvusKBService('test','BAAI/bge-large-zh-v1.5')
+    # docs_ = mil.search_docs(query=query,  top_k=top_k,
+    #                     score_threshold=score_threshold)
+    # print(docs_)
+    # print('debug')
+    #print(milvusService.get_doc_by_ids(["444022434274215486"]))
     # milvusService.delete_doc(KnowledgeFile("README.md", "test"))
     # milvusService.do_drop_kb()
     # print(milvusService.search_docs("如何启动api服务"))

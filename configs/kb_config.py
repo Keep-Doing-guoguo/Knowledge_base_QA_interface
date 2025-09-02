@@ -31,17 +31,17 @@ ZH_TITLE_ENHANCE = False
 
 # 知识库中单段文本长度(不适用MarkdownHeaderTextSplitter)
 CHUNK_SIZE = 250
-DEFAULT_VS_TYPE = "faiss"
+DEFAULT_VS_TYPE = "milvus"
 # 知识库中相邻文本重合长度(不适用MarkdownHeaderTextSplitter)
 OVERLAP_SIZE = 50
 # 可选向量库类型及对应配置
 kbs_config = {
 
     "milvus": {
-        "host": "127.0.0.1",
-        "port": "19530",
-        "user": "",
-        "password": "",
+        "host": "10.40.100.16",
+        "port": "9997",
+        "user": "neo4j",
+        "password": "neo4j",
         "secure": False,
     },
     "milvus_kwargs": {
@@ -57,6 +57,30 @@ path = '/Volumes/'
 VECTOR_SEARCH_TOP_K = 3
 SCORE_THRESHOLD = 0.6
 
+# TextSplitter配置项，如果你不明白其中的含义，就不要修改。
+text_splitter_dict = {
+    "ChineseRecursiveTextSplitter": {
+        "source": "huggingface",   # 选择tiktoken则使用openai的方法
+        "tokenizer_name_or_path": "",
+    },
+    "SpacyTextSplitter": {
+        "source": "huggingface",
+        "tokenizer_name_or_path": "gpt2",
+    },
+    "RecursiveCharacterTextSplitter": {
+        "source": "tiktoken",
+        "tokenizer_name_or_path": "cl100k_base",
+    },
+    "MarkdownHeaderTextSplitter": {
+        "headers_to_split_on":
+            [
+                ("#", "head1"),
+                ("##", "head2"),
+                ("###", "head3"),
+                ("####", "head4"),
+            ]
+    },
+}
 
 # TEXT_SPLITTER 名称
 TEXT_SPLITTER_NAME = "RecursiveCharacterTextSplitter"

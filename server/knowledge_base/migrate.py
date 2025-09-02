@@ -45,10 +45,6 @@ def import_from_db(
         # csv_path: str = None,
 ) -> bool:
     """
-    在知识库与向量库无变化的情况下，从备份数据库中导入数据到 info.db。
-    适用于版本升级时，info.db 结构变化，但无需重新向量化的情况。
-    请确保两边数据库表名一致，需要导入的字段名一致
-    当前仅支持 sqlite
     """
     import sqlite3 as sql
     from pprint import pprint

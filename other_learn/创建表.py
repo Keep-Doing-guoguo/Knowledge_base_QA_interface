@@ -1,21 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-"""
-@author: zgw
-@date: 2025/6/7 16:26
-@source from: 
-"""
-#!/usr/bin/env python
-# coding=utf-8
-
-"""
-@author: zgw
-@date: 2025/6/7
-@desc: 初始化知识库数据库表结构
-"""
-#!/usr/bin/env python
-# coding=utf-8
 
 """
 @author: zgw

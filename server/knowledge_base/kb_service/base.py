@@ -127,6 +127,7 @@ class KBService(ABC):#继承自 ABC（Abstract Base Class），表示这是一�
                                     custom_docs=custom_docs,
                                     docs_count=len(docs),
                                     doc_infos=doc_infos)#	7.	更新数据库
+            print('status')
         else:
             status = False
         return status
@@ -297,7 +298,7 @@ class KBServiceFactory:
                     ) -> KBService:
         if isinstance(vector_store_type, str):
             vector_store_type = getattr(SupportedVSType, vector_store_type.upper())
-        elif SupportedVSType.MILVUS == vector_store_type:
+        if SupportedVSType.MILVUS == vector_store_type:
             from server.knowledge_base.kb_service.milvus_kb_service import MilvusKBService
             return MilvusKBService(kb_name,embed_model=embed_model)
     @staticmethod
@@ -459,4 +460,8 @@ def score_threshold_process(score_threshold, k, docs):
             for doc, similarity in docs
             if cmp(similarity, score_threshold)
         ]
+        '''
+        确实用的 L2 距离，所以分数 0.86 表示比较接近，1.45 表示不太接近。在 Milvus 里如果使用 L2（欧式距离），距离越小 → 向量越接近（更相似）。
+        
+        '''
     return docs[:k]
