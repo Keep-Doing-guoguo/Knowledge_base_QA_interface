@@ -141,34 +141,6 @@ def get_LoaderClass(file_extension):
     for LoaderClass, extensions in LOADER_DICT.items():
         if file_extension in extensions:
             return LoaderClass
-def get_loader_(loader_name: str, file_path: str, loader_kwargs: Dict = None):
-    """
-    根据 loader 名称和文件路径返回 langchain 自带的文档加载器。
-    """
-    loader_kwargs = loader_kwargs or {}
-
-    try:
-        document_loaders_module = importlib.import_module('langchain.document_loaders')
-        DocumentLoader = getattr(document_loaders_module, loader_name)
-    except Exception as e:
-        raise ImportError(f"找不到 loader: {loader_name}，请确认名称是否正确。") from e
-
-    # 特殊处理某些 loader 的参数
-    if loader_name == "UnstructuredFileLoader":
-        loader_kwargs.setdefault("autodetect_encoding", True)
-
-    elif loader_name == "CSVLoader":
-        if "encoding" not in loader_kwargs:
-            with open(file_path, 'rb') as f:
-                encoding = chardet.detect(f.read())["encoding"] or "utf-8"
-                loader_kwargs["encoding"] = encoding
-
-    elif loader_name in ("JSONLoader", "JSONLinesLoader"):
-        loader_kwargs.setdefault("jq_schema", ".")
-        loader_kwargs.setdefault("text_content", False)
-
-    # 实例化 loader
-    return DocumentLoader(file_path, **loader_kwargs)
 
 # 把一些向量化共用逻辑从KnowledgeFile抽取出来，等langchain支持内存文件的时候，可以将非磁盘文件向量化
 def get_loader(loader_name: str, file_path: str, loader_kwargs: Dict = None):
@@ -242,70 +214,6 @@ def make_text_splitter(splitter_name: str = "RecursiveCharacterTextSplitter",
         print(f"❌ 无法加载 {splitter_name}，默认使用 RecursiveCharacterTextSplitter: {e}")#在这里默认使用这个来进行切分docs
         return RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 #根据参数获取特定的分词器
-def make_text_splitter_(splitter_name: str = TEXT_SPLITTER_NAME,chunk_size: int = CHUNK_SIZE, chunk_overlap: int = OVERLAP_SIZE, llm_model: str = None):
-    """
-    根据参数获取特定的分词器
-    """
-    splitter_name = splitter_name or "SpacyTextSplitter"
-    try:
-        if splitter_name == "MarkdownHeaderTextSplitter":  # MarkdownHeaderTextSplitter特殊判定
-            headers_to_split_on = text_splitter_dict[splitter_name]['headers_to_split_on']
-            text_splitter = langchain.text_splitter.MarkdownHeaderTextSplitter(
-                headers_to_split_on=headers_to_split_on)
-        else:
-
-            try:  ## 优先使用用户自定义的text_splitter
-                text_splitter_module = importlib.import_module('text_splitter')
-                TextSplitter = getattr(text_splitter_module, splitter_name)
-            except:  ## 否则使用langchain的text_splitter
-                text_splitter_module = importlib.import_module('langchain.text_splitter')
-                TextSplitter = getattr(text_splitter_module, splitter_name)
-
-            if text_splitter_dict[splitter_name]["source"] == "tiktoken":  ## 从tiktoken加载
-                try:
-                    text_splitter = TextSplitter.from_tiktoken_encoder(
-                        encoding_name=text_splitter_dict[splitter_name]["tokenizer_name_or_path"],
-                        pipeline="zh_core_web_sm",
-                        chunk_size=chunk_size,
-                        chunk_overlap=chunk_overlap
-                    )
-                except:
-                    text_splitter = TextSplitter.from_tiktoken_encoder(
-                        encoding_name=text_splitter_dict[splitter_name]["tokenizer_name_or_path"],
-                        chunk_size=chunk_size,
-                        chunk_overlap=chunk_overlap
-                    )
-            elif text_splitter_dict[splitter_name]["source"] == "huggingface":  ## 从huggingface加载
-                 ## 字符长度加载
-                from transformers import AutoTokenizer
-                tokenizer = AutoTokenizer.from_pretrained(text_splitter_dict[splitter_name]["tokenizer_name_or_path"],trust_remote_code=True)
-                text_splitter = TextSplitter.from_huggingface_tokenizer(
-                    tokenizer=tokenizer,
-                    chunk_size=chunk_size,
-                    chunk_overlap=chunk_overlap
-                )
-            else:
-                try:
-                    text_splitter = TextSplitter(
-                        pipeline="zh_core_web_sm",
-                        chunk_size=chunk_size,
-                        chunk_overlap=chunk_overlap
-                    )
-                except:
-                    text_splitter = TextSplitter(
-                        chunk_size=chunk_size,
-                        chunk_overlap=chunk_overlap
-                    )
-    except Exception as e:
-        print(e)
-        text_splitter_module = importlib.import_module('langchain.text_splitter')
-        TextSplitter = getattr(text_splitter_module, "RecursiveCharacterTextSplitter")
-
-        # from langchain.text_splitter import RecursiveCharacterTextSplitter
-        # 可以将上面的代码替换为下面的代码
-        # TextSplitter = RecursiveCharacterTextSplitter
-        text_splitter = TextSplitter(chunk_size=250, chunk_overlap=50)
-    return text_splitter
 
 
 class KnowledgeFile:
@@ -342,7 +250,6 @@ class KnowledgeFile:
     def docs2texts(#在这里对文本进行切分
             self,
             docs: List[Document] = None,
-            zh_title_enhance: bool = ZH_TITLE_ENHANCE,
             refresh: bool = False,
             chunk_size: int = CHUNK_SIZE,
             chunk_overlap: int = OVERLAP_SIZE,
@@ -363,15 +270,12 @@ class KnowledgeFile:
         if not docs:
             return []
 
-        #print(f"文档切分示例：{docs[0]}")
-        if zh_title_enhance:
-            pass
+
         self.splited_docs = docs
         return self.splited_docs
 
     def file2text(
             self,
-            zh_title_enhance: bool = ZH_TITLE_ENHANCE,
             refresh: bool = False,
             chunk_size: int = CHUNK_SIZE,
             chunk_overlap: int = OVERLAP_SIZE,
@@ -380,7 +284,6 @@ class KnowledgeFile:
         if self.splited_docs is None or refresh:
             docs = self.file2docs()#加载为Document
             self.splited_docs = self.docs2texts(docs=docs,
-                                                zh_title_enhance=zh_title_enhance,
                                                 refresh=refresh,
                                                 chunk_size=chunk_size,
                                                 chunk_overlap=chunk_overlap,
@@ -395,57 +298,10 @@ class KnowledgeFile:
 
     def get_size(self):
         return os.path.getsize(self.filepath)
-
-def files2docs_in_thread(
-        files: List[Union[KnowledgeFile, Tuple[str, str], Dict]],
-        chunk_size: int = CHUNK_SIZE,
-        chunk_overlap: int = OVERLAP_SIZE,
-        zh_title_enhance: bool = ZH_TITLE_ENHANCE,
-) -> Generator:
-    '''
-    利用多线程批量将磁盘文件转化成langchain Document.
-    如果传入参数是Tuple，形式为(filename, kb_name)
-    生成器返回值为 status, (kb_name, file_name, docs | error)
-    '''
-
-    def file2docs(*, file: KnowledgeFile, **kwargs) -> Tuple[bool, Tuple[str, str, List[Document]]]:
-        try:
-            return True, (file.kb_name, file.filename, file.file2text(**kwargs))#file2text里面包含了两个部分：主要是file2docs和docs2text部分
-        except Exception as e:
-            msg = f"从文件 {file.kb_name}/{file.filename} 加载文档时出错：{e}"
-            logger.error(f'{e.__class__.__name__}: {msg}',
-                         exc_info=e if log_verbose else None)
-            return False, (file.kb_name, file.filename, msg)
-
-    kwargs_list = []
-    for i, file in enumerate(files):
-        kwargs = {}
-        try:
-            if isinstance(file, tuple) and len(file) >= 2:
-                filename = file[0]
-                kb_name = file[1]
-                file = KnowledgeFile(filename=filename, knowledge_base_name=kb_name)
-            elif isinstance(file, dict):
-                filename = file.pop("filename")
-                kb_name = file.pop("kb_name")
-                kwargs.update(file)
-                file = KnowledgeFile(filename=filename, knowledge_base_name=kb_name)
-            kwargs["file"] = file
-            kwargs["chunk_size"] = chunk_size
-            kwargs["chunk_overlap"] = chunk_overlap
-            kwargs["zh_title_enhance"] = zh_title_enhance
-            kwargs_list.append(kwargs)
-            print('')
-        except Exception as e:
-            yield False, (kb_name, filename, str(e))
-
-    for result in run_in_thread_pool(func=file2docs, params=kwargs_list):
-        yield result
 def files2docs_in_thread_(
         files: List[Union[KnowledgeFile, Tuple[str, str], Dict]],
         chunk_size: int = CHUNK_SIZE,
         chunk_overlap: int = OVERLAP_SIZE,
-        zh_title_enhance: bool = ZH_TITLE_ENHANCE,
 ) -> Generator:
     """
     单线程将磁盘文件转化为 langchain Document。
@@ -478,7 +334,6 @@ def files2docs_in_thread_(
                 "file": file,
                 "chunk_size": chunk_size,
                 "chunk_overlap": chunk_overlap,
-                "zh_title_enhance": zh_title_enhance
             })
 
             yield file2docs(**kwargs)
@@ -496,5 +351,5 @@ if __name__ == "__main__":
     # kb_file.text_splitter_name = "RecursiveCharacterTextSplitter"
     #docs = kb_file.file2docs()
     docs2texts = kb_file.docs2texts()
-    file2text = kb_file.file2text()
-    #print(docs)
+    file2text = kb_file.file2text()#这俩个函数达到的效果是一样的。
+    print()

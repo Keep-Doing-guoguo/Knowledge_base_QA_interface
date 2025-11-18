@@ -14,41 +14,30 @@ from typing import List, Dict
 
 
 @with_session
-def list_docs_from_db(session,
-                      kb_name: str,
-                      file_name: str = None,
-                      metadata: Dict = {},
-                      ) -> List[Dict]:
+def list_docs_form_db(session,kb_name:str,file_name:str,meta_data:Dict={}) -> List[Dict]:
     '''
-    列出某知识库某文件对应的所有Document。
-    返回形式：[{"id": str, "metadata": dict}, ...]
+    docs表的字段为：id、kbname、filename、docid、metadata
+    :param session:
+    :param kb_name:
+    :param file_name:
+    :param meta_data:
+    :return:
     '''
     docs = session.query(FileDocModel).filter(FileDocModel.kb_name.ilike(kb_name))
-    if file_name:
+    if file_name:#如果这文件存在拿到这个文件所有的metadata
         docs = docs.filter(FileDocModel.file_name.ilike(file_name))
-    for k, v in metadata.items():
-        docs = docs.filter(FileDocModel.meta_data[k].as_string()==str(v))
-
+    for k,v in meta_data.items():
+        docs = docs.filter(FileDocModel.metadata[k].as_string() == str(v))
     return [{"id": x.doc_id, "metadata": x.metadata} for x in docs.all()]
-
-
 @with_session
-def delete_docs_from_db(session,
-                      kb_name: str,
-                      file_name: str = None,
-                      ) -> List[Dict]:
-    '''
-    删除某知识库某文件对应的所有Document，并返回被删除的Document。
-    返回形式：[{"id": str, "metadata": dict}, ...]
-    '''
-    docs = list_docs_from_db(kb_name=kb_name, file_name=file_name)
+def delete_docs_from_db(session,kb_name:str,file_name:str=None)->List[Dict]:##这里是删除某一个知识库里面的某一个文件。
+    docs = list_docs_form_db(kb_name=kb_name,file_name=file_name)
     query = session.query(FileDocModel).filter(FileDocModel.kb_name.ilike(kb_name))
     if file_name:
         query = query.filter(FileDocModel.file_name.ilike(file_name))
     query.delete(synchronize_session=False)
     session.commit()
     return docs
-
 
 @with_session
 def add_docs_to_db(session,
@@ -75,24 +64,21 @@ def add_docs_to_db(session,
 
 
 @with_session
-def count_files_from_db(session, kb_name: str) -> int:
-    return session.query(KnowledgeFileModel).filter(KnowledgeFileModel.kb_name.ilike(kb_name)).count()
-
-
-@with_session
-def list_files_from_db(session, kb_name):
-    files = session.query(KnowledgeFileModel).filter(KnowledgeFileModel.kb_name.ilike(kb_name)).all()
-    docs = [f.file_name for f in files]
-    return docs
-
-
-@with_session
 def add_file_to_db(session,
                 kb_file: KnowledgeFile,
                 docs_count: int = 0,
                 custom_docs: bool = False,
                 doc_infos: List[str] = [], # 形式：[{"id": str, "metadata": dict}, ...]
                 ):
+    '''
+    查询知识库是否存在，查询知识库文件是否存在。如果存在的话进行更新。如果不存在的话进行添加。添加到数据库中，然后再进行添加到Doc
+    :param session:
+    :param kb_file:
+    :param docs_count:
+    :param custom_docs:
+    :param doc_infos:
+    :return:
+    '''
     kb = session.query(KnowledgeBaseModel).filter_by(kb_name=kb_file.kb_name).first()
     if kb:
         # 如果已经存在该文件，则更新文件信息与版本号
@@ -127,13 +113,13 @@ def add_file_to_db(session,
         add_docs_to_db(kb_name=kb_file.kb_name, file_name=kb_file.filename, doc_infos=doc_infos)
     return True
 
-
 @with_session
-def delete_file_from_db(session, kb_file: KnowledgeFile):
+def delete_file_from_db(session,kb_file:KnowledgeFile):
+    #1.先看看在特定的知识库中有没有这个文件.2.然后有的话就进行删除
     existing_file = (session.query(KnowledgeFileModel)
                      .filter(KnowledgeFileModel.file_name.ilike(kb_file.filename),
-                            KnowledgeFileModel.kb_name.ilike(kb_file.kb_name))
-                    .first())
+                             KnowledgeFileModel.kb_name.ilike(kb_file.kb_name))
+                     .first())
     if existing_file:
         session.delete(existing_file)
         delete_docs_from_db(kb_name=kb_file.kb_name, file_name=kb_file.filename)
@@ -144,101 +130,59 @@ def delete_file_from_db(session, kb_file: KnowledgeFile):
             kb.file_count -= 1
             session.commit()
     return True
-
-
+@with_session
+def file_exists_in_db(session, kb_file: KnowledgeFile):
+    existing_file = (session.query(KnowledgeFileModel)
+                     .filter(KnowledgeFileModel.file_name.ilike(kb_file.filename),
+                            KnowledgeFileModel.kb_name.ilike(kb_file.kb_name))
+                    .first())#同一个知识库下的某一个文件才可以删除
+    return True if existing_file else False
 @with_session
 def delete_files_from_db(session, knowledge_base_name: str):
+    '''
+    先把filemodel里面的文件删除；然后再删除docmodel里面的内容；然后再删除这个知识库（只是将文件归置为0）。
+    :param session:
+    :param knowledge_base_name:
+    :return:
+    '''
     print(f"knowledge_base_name----{knowledge_base_name}")
     session.query(KnowledgeFileModel).filter(KnowledgeFileModel.kb_name.ilike(knowledge_base_name)).delete(synchronize_session=False)
     session.query(FileDocModel).filter(FileDocModel.kb_name.ilike(knowledge_base_name)).delete(synchronize_session=False)
     kb = session.query(KnowledgeBaseModel).filter(KnowledgeBaseModel.kb_name.ilike(knowledge_base_name)).first()
     if kb:
         kb.file_count = 0
-
     session.commit()
     return True
 
-
 @with_session
-def file_exists_in_db(session, kb_file: KnowledgeFile):
-    existing_file = (session.query(KnowledgeFileModel)
-                     .filter(KnowledgeFileModel.file_name.ilike(kb_file.filename),
-                            KnowledgeFileModel.kb_name.ilike(kb_file.kb_name))
-                    .first())
-    return True if existing_file else False
+def list_files_from_db(session, kb_name):
+    '''
+    从knowledgefile中先query，然后过滤kb_name符合的，把这些全部都取出来。然后再拿到file_name。
+    :param session:
+    :param kb_name:
+    :return:
+    '''
+    files = session.query(KnowledgeFileModel).filter(KnowledgeFileModel.kb_name.ilike(kb_name)).all()
+    docs = [f.file_name for f in files]
+    return docs
 
-
-@with_session
-def get_file_detail(session, kb_name: str, filename: str) -> dict:
-    file: KnowledgeFileModel = (session.query(KnowledgeFileModel)
-                                .filter(KnowledgeFileModel.file_name.ilike(filename),
-                                        KnowledgeFileModel.kb_name.ilike(kb_name))
-                                .first())
-    if file:
-        return {
-            "kb_name": file.kb_name,
-            "file_name": file.file_name,
-            "file_ext": file.file_ext,
-            "file_version": file.file_version,
-            "document_loader": file.document_loader_name,
-            "text_splitter": file.text_splitter_name,
-            "create_time": file.create_time,
-            "file_mtime": file.file_mtime,
-            "file_size": file.file_size,
-            "custom_docs": file.custom_docs,
-            "docs_count": file.docs_count,
-        }
-    else:
-        return {}
-
-
-
-# test_knowledge_file_repository.py
-from datetime import datetime
-
-
-
-from server.db.repository.knowledge_file_repository import (
-    add_file_to_db,
-    delete_file_from_db,
-    list_files_from_db,
-    get_file_detail,
-)
-from server.knowledge_base.utils import KnowledgeFile
-
-def _test_add_and_delete_kb_file():
-    test_kb_name = "samples"
-    test_file_path = "/Volumes/PSSD/未命名文件夹/donwload/创建知识库数据库/knowledge_base/test.txt"
-    test_filename = "test.txt"
-
-    print("➡️ 加载文件并向量化文本...")
-    kb_file = KnowledgeFile(filename=test_file_path, knowledge_base_name=test_kb_name)
-    docs = kb_file.file2text()
-
-    # 构造 doc_infos 结构
-    doc_infos = [{"id": f"{i}", "metadata": {"source": test_filename}} for i in range(len(docs))]
-
-    print("✅ 添加文件到数据库...")
-    add_file_to_db(
-        kb_file=kb_file,
-        docs_count=len(docs),
-        custom_docs=False,
-        doc_infos=doc_infos
-    )
-
-    print("🔍 当前文件列表:")
-    print(list_files_from_db(test_kb_name))
-
-    print("📄 文件详情:")
-    print(get_file_detail(test_kb_name, test_filename))
-
-    print("🗑️ 删除文件并对应文档...")
-    delete_file_from_db(kb_file)
-
-    print("✅ 删除后文件列表:")
-    print(list_files_from_db(test_kb_name))
-
-# 调用测试函数
 if __name__ == "__main__":
-    _test_add_and_delete_kb_file()
+
+    #添加文件先到数据库，然后再到知识库中。
+
+
+    #1.查询docs表中的某一个文件。
+    print(list_docs_form_db(kb_name='samples',file_name="test.txt",meta_data={}))
+
+    #2.添加文件到docs表,该函数只会被add_file进行调用
+    #print(add_docs_to_db(kb_name="samples",file_name="",doc_infos={}))
+
+    #3.删除某一个知识库里面的某一个文件
+    #print(delete_docs_from_db(kb_name='samples',file_name='test.txt'))
+
+    #4.添加文件到知识库中.先把文件数据添加到数据库中。
+    #添加文件需要去多个方法的建立，首先需要一个KnowledegFile的构建，这个可以去使用kb_doc_api里面进行测试。
+
+    #
+
 

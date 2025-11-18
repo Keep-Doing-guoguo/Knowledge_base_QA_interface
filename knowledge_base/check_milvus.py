@@ -10,7 +10,6 @@ from pymilvus import connections, utility, Collection
 
 # 连接 Milvus 服务
 connections.connect("default", host="10.40.100.16", port="9997")
-connections.connect("default", host="10.40.100.16", port="9997")
 
 # 查看所有集合
 collections = utility.list_collections()

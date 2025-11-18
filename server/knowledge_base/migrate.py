@@ -12,7 +12,7 @@ from configs import (
 )
 from server.knowledge_base.utils import (
     get_file_path, list_kbs_from_folder,
-    list_files_from_folder, files2docs_in_thread,files2docs_in_thread_,
+    list_files_from_folder,files2docs_in_thread_,
     KnowledgeFile
 )
 from server.knowledge_base.kb_service.base import KBServiceFactory
@@ -39,7 +39,7 @@ def reset_tables():
     Base.metadata.drop_all(bind=engine)
     create_tables()
 
-
+reset_tables()
 def import_from_db(
         sqlite_path: str = None,
         # csv_path: str = None,
@@ -144,3 +144,5 @@ def folder2db(
 
 
 
+if __name__ == '__main__':
+    reset_tables()

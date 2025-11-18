@@ -98,3 +98,31 @@ async def chat(query:str = Body(...,description='',examples=['你好']),
 
 
     return EventSourceResponse(chat_iterator())
+'''
+🏁 asyncio.run()
+相当于“开赛” → 启动整个异步比赛（事件循环）
+🏃 asyncio.create_task()
+相当于“让某个选手开始跑” → 在比赛过程中并发多个选手
+
+
+
+import asyncio
+
+async def main():
+    print("Hello asyncio.run")
+
+asyncio.run(main())
+！
+import asyncio
+
+async def main():
+    print("Hello run_until_complete")
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+loop.run_until_complete(main())
+loop.close()
+
+
+
+'''

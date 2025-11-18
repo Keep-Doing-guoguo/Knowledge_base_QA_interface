@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>知识库管理台（纯 HTML/CSS/JS）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind CDN（零构建） -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card { border-radius: 1rem; }
+    .tab-btn[aria-selected="true"] { background: rgb(243 244 246); }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-white to-gray-50 text-gray-900">
+  <!-- 顶栏 -->
+  <header class="sticky top-0 z-10 backdrop-blur bg-white/70 border-b">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl bg-indigo-100 grid place-items-center text-indigo-600">DB</div>
+        <div>
+          <h1 class="text-lg font-semibold">知识库管理台（纯前端）</h1>
+          <p class="text-xs text-gray-500">Milvus + SQLite 的可视化运维与检索</p>
+        </div>
+      </div>
+      <div class="hidden sm:block text-xs text-gray-500">无需构建，直接打开 HTML 即可</div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-4 sm:p-6">
+    <!-- 选项卡 -->
+    <div class="mb-4 flex flex-wrap gap-2">
+      <button class="tab-btn px-3 py-1.5 rounded-full text-sm border" data-tab="kb" aria-selected="true">创建/删除</button>
+      <button class="tab-btn px-3 py-1.5 rounded-full text-sm border" data-tab="upload">上传文件</button>
+      <button class="tab-btn px-3 py-1.5 rounded-full text-sm border" data-tab="delete-file">删除文件</button>
+      <button class="tab-btn px-3 py-1.5 rounded-full text-sm border" data-tab="list">文件列表</button>
+      <button class="tab-btn px-3 py-1.5 rounded-full text-sm border" data-tab="query">知识库查询</button>
+      <button class="tab-btn px-3 py-1.5 rounded-full text-sm border" data-tab="about">说明</button>
+    </div>
+
+    <!-- 面板：创建/删除 -->
+    <section data-panel="kb" class="grid gap-6 sm:grid-cols-2">
+      <!-- 左侧：创建/更新 -->
+      <div class="card border p-4">
+        <h2 class="font-semibold mb-1">创建 / 更新 知识库</h2>
+        <p class="text-xs text-gray-500 mb-4">与后端保持一致：需要名称、向量库类型、向量模型。</p>
+
+        <label class="text-sm">知识库名称（knowledge_base_name）</label>
+        <input id="kbName" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="例如：examples1" />
+
+        <div class="grid sm:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="text-sm">向量库类型（vector_store_type）</label>
+            <select id="kbVST" class="mt-1 w-full border rounded-lg px-3 py-2">
+              <option value="milvus" selected>milvus</option>
+              <option value="pgvector">pgvector</option>
+              <option value="chroma">chroma</option>
+              <option value="faiss">faiss</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm">向量模型（embed_model）</label>
+            <input id="kbEMB" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="例如：qwen-api" value="qwen-api" />
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button id="btnCreateKb" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">创建 / 更新</button>
+        </div>
+      </div>
+
+      <!-- 右侧：删除知识库（请求体是纯字符串 JSON） -->
+      <div class="card border p-4">
+        <h2 class="font-semibold mb-1">删除 知识库</h2>
+        <p class="text-xs text-gray-500 mb-4">后端要求请求体直接是字符串 JSON：例如 <code>"samples2"</code>。</p>
+        <label class="text-sm">知识库名称</label>
+        <input id="kbNameDel" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder='例如：samples2（会发送 "samples2"）' />
+        <div class="mt-4">
+          <button id="btnDeleteKb" class="px-4 py-2 bg-rose-600 text-white rounded-lg">删除</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 面板：上传文件（多文件） -->
+    <section data-panel="upload" class="hidden">
+      <div class="card border p-4">
+        <h2 class="font-semibold mb-1">上传知识库文件（支持多文件）</h2>
+        <p class="text-xs text-gray-500 mb-4">字段：files（多值）、knowledge_base_name、override、to_vector_store、chunk_size、chunk_overlap</p>
+
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm">知识库名称</label>
+            <input id="upKbName" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="例如：samples" />
+          </div>
+          <div>
+            <label class="text-sm">选择文件（可多选）</label>
+            <input id="upFile" type="file" multiple class="mt-1 w-full border rounded-lg px-3 py-2 bg-white" />
+            <div id="fileList" class="text-xs text-gray-500 mt-2"></div>
+          </div>
+          <div>
+            <label class="text-sm">Chunk Size（chunk_size）</label>
+            <input id="upChunk" type="number" value="250" min="50" step="50" class="mt-1 w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="text-sm">Chunk Overlap（chunk_overlap）</label>
+            <input id="upOverlap" type="number" value="50" min="0" step="10" class="mt-1 w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div class="flex items-center justify-between border rounded-xl p-3">
+            <div>
+              <div class="text-sm">是否向量化（to_vector_store）</div>
+              <p class="text-xs text-gray-500">上传后立刻入库（Milvus）</p>
+            </div>
+            <input id="upVec" type="checkbox" class="w-5 h-5" checked />
+          </div>
+          <div class="flex items-center justify-between border rounded-xl p-3">
+            <div>
+              <div class="text-sm">是否覆盖（override）</div>
+              <p class="text-xs text-gray-500">同名文件是否覆盖重传</p>
+            </div>
+            <input id="upOverride" type="checkbox" class="w-5 h-5" />
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-center gap-3">
+          <button id="btnUpload" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">上传</button>
+          <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div id="upBar" class="h-full bg-indigo-500 w-0"></div>
+          </div>
+          <span id="upPct" class="text-sm text-gray-600 w-16 text-right">0%</span>
+        </div>
+
+        <div id="upResult" class="mt-3 text-sm text-gray-700"></div>
+      </div>
+    </section>
+
+    <!-- 面板：删除文件 -->
+    <section data-panel="delete-file" class="hidden">
+      <div class="card border p-4">
+        <h2 class="font-semibold mb-1">删除知识库文件</h2>
+        <p class="text-xs text-gray-500 mb-4">与后端保持一致：<code>knowledge_base_name</code>、<code>file_names:[]</code>、<code>delete_content</code></p>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm">知识库名称</label>
+            <input id="delFileKb" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="例如：samples" />
+          </div>
+          <div>
+            <label class="text-sm">文件名（可多项，逗号分隔）</label>
+            <input id="delFilename" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="例如：a.txt,b.pdf,c.md" />
+          </div>
+        </div>
+        <div class="mt-4">
+          <button id="btnDeleteFile" class="px-4 py-2 bg-rose-600 text-white rounded-lg">删除文件</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 面板：文件列表 -->
+    <section data-panel="list" class="hidden">
+      <div class="card border p-4">
+        <h2 class="font-semibold mb-1">知识库文件列表</h2>
+        <p class="text-xs text-gray-500 mb-4">适配返回体：<code>{code,msg,data:[string]}</code></p>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input id="listKb" class="flex-1 border rounded-lg px-3 py-2" placeholder="知识库名称，如 samples" />
+          <button id="btnListFiles" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">刷新</button>
+        </div>
+
+        <div class="mt-4 overflow-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-500 border-b">
+                <th class="py-2 pr-4">文件名</th>
+                <th class="py-2 pr-4 text-right">大小</th>
+                <th class="py-2 pr-4">更新时间</th>
+              </tr>
+            </thead>
+            <tbody id="filesTbody">
+              <tr><td class="py-3 text-gray-500" colspan="3">暂无数据</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 面板：查询 -->
+    <section data-panel="query" class="hidden">
+      <div class="card border p-4">
+        <h2 class="font-semibold mb-1">检索知识库</h2>
+        <p class="text-xs text-gray-500 mb-4">传入：query / knowledge_base_name / top_k / score_threshold / file_name / metadata</p>
+
+        <div class="grid gap-4">
+          <div>
+            <label class="text-sm">知识库名称（knowledge_base_name）</label>
+            <input id="qKb" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="例如：samples" />
+          </div>
+
+          <div>
+            <label class="text-sm">查询语句（query）</label>
+            <textarea id="qText" rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="例如：介绍新乡工程学院"></textarea>
+          </div>
+
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label class="text-sm">Top K</label>
+              <input id="qTopK" type="number" value="3" min="1" max="50" class="mt-1 w-full border rounded-lg px-3 py-2" />
+            </div>
+            <div>
+              <label class="text-sm">分数阈值 (0~1)（score_threshold）</label>
+              <input id="qScore" type="range" min="0" max="1" step="0.01" value="0.6" class="mt-3 w-full" />
+              <div class="text-xs text-gray-500 mt-1">当前阈值：<span id="qScoreVal">0.60</span></div>
+            </div>
+            <div>
+              <label class="text-sm">文件名过滤（file_name，可为空）</label>
+              <input id="qFileName" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="例如：test.txt（可留空）" />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm">Metadata（JSON，可为空）</label>
+            <textarea id="qMeta" rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder='例如：{"category":"notice"}（留空则发 {}）'></textarea>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="btnQuery" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">开始检索</button>
+            <div class="text-xs text-gray-500">将按数组结果直接渲染</div>
+          </div>
+
+          <div class="border rounded-xl p-3">
+            <ul id="qResults" class="space-y-3 text-sm">
+              <li class="text-gray-500">暂无结果</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 面板：说明 -->
+    <section data-panel="about" class="hidden">
+      <div class="card border p-4">
+        <h2 class="font-semibold mb-2">接口对接说明</h2>
+        <div class="text-sm space-y-3 text-gray-700">
+          <p>把顶部 <code>BASE</code> 改成你的后端地址即可；若跨域，请在 FastAPI 开启 CORS。</p>
+<pre class="bg-gray-100 p-3 rounded-lg text-xs overflow-auto">
+POST /knowledge_base/create_knowledge_base
+  {"knowledge_base_name","vector_store_type","embed_model"}
+
+POST /knowledge_base/delete_knowledge_base
+  "samples2"  ← 注意：纯字符串 JSON
+
+POST /knowledge_base/upload_docs (multipart/form-data)
+  files=@a.txt & files=@b.pdf
+  knowledge_base_name
+  override
+  to_vector_store
+  chunk_size
+  chunk_overlap
+
+POST /knowledge_base/delete_docs
+  {"knowledge_base_name","file_names":[...],"delete_content":false}
+
+GET  /knowledge_base/list_files?knowledge_base_name=xxx
+  → {code,msg,data:[ "test.txt", ... ]}
+
+POST /knowledge_base/search_docs
+  {"query","knowledge_base_name","top_k","score_threshold","file_name","metadata"}
+  → 直接返回数组：[ {page_content,metadata:{source,pk},score,id}, ... ]
+</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 轻量提示 -->
+  <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 hidden bg-black text-white text-sm px-3 py-2 rounded-lg"></div>
+
+  <script>
+    // ===== 配置 API 路径 =====
+    const BASE = "http://127.0.0.1:7861"; // 部署后改成你的域名/网关
+    const API = {
+      createKb:   BASE + "/knowledge_base/create_knowledge_base",
+      deleteKb:   BASE + "/knowledge_base/delete_knowledge_base",
+      uploadFile: BASE + "/knowledge_base/upload_docs",
+      deleteFile: BASE + "/knowledge_base/delete_docs",
+      listFiles:  BASE + "/knowledge_base/list_files",
+      query:      BASE + "/knowledge_base/search_docs",
+    };
+
+    // ===== 工具函数（健壮 JSON 解析 + 轻提示）=====
+    function toast(msg, ok=true) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.style.background = ok ? 'rgba(0,0,0,0.85)' : 'rgba(220, 38, 38, 0.95)';
+      el.classList.remove('hidden');
+      setTimeout(()=> el.classList.add('hidden'), 2200);
+    }
+
+    async function fetchJSON(url, opts) {
+      const res = await fetch(url, opts);
+      if (!res.ok) throw new Error(await res.text().catch(()=> '') || ('HTTP ' + res.status));
+      const ct = (res.headers.get('content-type') || '').toLowerCase();
+      if (ct.includes('application/json')) {
+        try { return await res.json(); } catch (_) {}
+      }
+      const txt = await res.text();
+      try { const first = txt.trim()[0]; if (first==='{'||first==='[') return JSON.parse(txt); } catch(_) {}
+      return txt;
+    }
+
+    // ===== Tab 切换 =====
+    const tabs = document.querySelectorAll('.tab-btn');
+    const panels = document.querySelectorAll('section[data-panel]');
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabs.forEach(b => b.setAttribute('aria-selected', 'false'));
+        btn.setAttribute('aria-selected', 'true');
+        const key = btn.dataset.tab;
+        panels.forEach(p => p.classList.toggle('hidden', p.dataset.panel !== key));
+      });
+    });
+
+    // ===== 创建 / 更新 KB =====
+    document.getElementById('btnCreateKb').onclick = async () => {
+      const name = document.getElementById('kbName')?.value.trim();
+      const vectorStoreType = (document.getElementById('kbVST')?.value || 'milvus').trim();
+      const embedModel = (document.getElementById('kbEMB')?.value || 'qwen-api').trim();
+
+      if (!name) return toast('请输入知识库名称', false);
+
+      const payload = {
+        knowledge_base_name: name,
+        vector_store_type: vectorStoreType,
+        embed_model: embedModel,
+      };
+      console.debug('create_knowledge_base payload:', payload);
+
+      try {
+        const ret = await fetchJSON(API.createKb, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        console.debug('create_knowledge_base raw:', ret);
+        if (ret?.code === 200) {
+          toast(ret.msg || `知识库已创建/更新：${name}`);
+          document.getElementById('kbNameDel').value = name;
+        } else {
+          toast('创建失败：' + (ret?.msg || '未知错误'), false);
+        }
+      } catch (e) {
+        toast('创建失败：' + e.message, false);
+      }
+    };
+
+    // ===== 删除 KB（请求体为纯字符串 JSON）=====
+    document.getElementById('btnDeleteKb').onclick = async () => {
+      const name = document.getElementById('kbNameDel').value.trim();
+      if (!name) return toast('请输入知识库名称', false);
+
+      try {
+        const ret = await fetchJSON(API.deleteKb, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(name), // 关键：直接字符串
+        });
+        console.debug('delete_knowledge_base raw:', ret);
+        if (ret?.code === 200) {
+          toast(ret.msg || `成功删除知识库：${name}`);
+        } else {
+          toast('删除失败：' + (ret?.msg || '未知错误'), false);
+        }
+      } catch (e) {
+        toast('删除失败：' + e.message, false);
+      }
+    };
+
+    // ===== 上传文件（多文件） =====
+    const upFileInput = document.getElementById('upFile');
+    const fileList = document.getElementById('fileList');
+
+    upFileInput.addEventListener('change', () => {
+      const files = Array.from(upFileInput.files || []);
+      fileList.innerHTML = files.length
+        ? `已选择 ${files.length} 个文件：<br>` + files.map(f => `• ${f.name}`).join('<br>')
+        : '';
+    });
+
+    document.getElementById('btnUpload').onclick = async () => {
+      const kbName = document.getElementById('upKbName').value.trim();
+      const files = Array.from(upFileInput.files || []);
+      const chunk = document.getElementById('upChunk').value;
+      const overlap = document.getElementById('upOverlap').value;
+      const toVS = document.getElementById('upVec').checked;
+      const override = document.getElementById('upOverride').checked;
+
+      const resultEl = document.getElementById('upResult');
+      resultEl.textContent = '';
+
+      if (!kbName) return toast('请输入知识库名称', false);
+      if (files.length === 0) return toast('请至少选择一个文件', false);
+
+      const fd = new FormData();
+      files.forEach(f => fd.append('files', f));                 // 多文件
+      fd.append('knowledge_base_name', kbName);
+      fd.append('override', String(override));
+      fd.append('to_vector_store', String(toVS));
+      fd.append('chunk_size', String(chunk));
+      fd.append('chunk_overlap', String(overlap));
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', API.uploadFile);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          document.getElementById('upBar').style.width = pct + '%';
+          document.getElementById('upPct').textContent = pct + '%';
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          console.debug('upload_docs raw:', xhr.responseText);
+
+          let payload = {};
+          try { payload = JSON.parse(xhr.responseText); } catch(_){ payload = { msg: xhr.responseText }; }
+
+          const msg = payload?.msg ?? '上传成功';
+          const failed = payload?.data?.failed_files ?? {};
+          const failedCount = typeof failed === 'object' ? Object.keys(failed).length : 0;
+
+          let failedHTML = '';
+          if (failedCount > 0) {
+            const items = Object.entries(failed).map(([fname, reason]) =>
+              `<li class="list-disc ml-5"><span class="font-medium">${fname}</span>：${reason}</li>`
+            ).join('');
+            failedHTML = `
+              <div class="mt-2">
+                <div class="text-xs text-rose-600 font-medium">失败明细：</div>
+                <ul class="text-xs text-gray-600 mt-1">${items}</ul>
+              </div>
+            `;
+          }
+
+          resultEl.innerHTML = `
+            <div class="p-3 border rounded-xl bg-white">
+              <div class="text-sm font-medium text-green-700">${msg}</div>
+              <div class="text-xs text-gray-600 mt-1">共选择：${files.length} 个文件；失败：${failedCount} 个</div>
+              ${failedHTML}
+            </div>
+          `;
+
+          document.getElementById('upBar').style.width = '100%';
+          document.getElementById('upPct').textContent = '100%';
+          toast('上传完成，共 ' + files.length + ' 个文件');
+          setTimeout(()=> {
+            document.getElementById('upBar').style.width = '0%';
+            document.getElementById('upPct').textContent = '0%';
+          }, 800);
+        } else {
+          toast('上传失败：' + xhr.responseText, false);
+        }
+      };
+
+      xhr.onerror = () => toast('上传失败：网络错误', false);
+      xhr.send(fd);
+    };
+
+    // ===== 删除文件（file_names 数组 + delete_content）=====
+    document.getElementById('btnDeleteFile').onclick = async () => {
+      const kbName = document.getElementById('delFileKb').value.trim();
+      const namesRaw = document.getElementById('delFilename').value.trim();
+
+      if (!kbName) return toast('请输入知识库名称', false);
+      if (!namesRaw) return toast('请输入要删除的文件名', false);
+
+      const fileNames = namesRaw.split(',').map(s => s.trim()).filter(Boolean);
+      if (fileNames.length === 0) return toast('请输入有效的文件名', false);
+
+      const payload = {
+        knowledge_base_name: kbName,
+        file_names: fileNames,
+        delete_content: false,
+      };
+      console.debug('delete_docs payload:', payload);
+
+      try {
+        const ret = await fetchJSON(API.deleteFile, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        console.debug('delete_docs raw:', ret);
+
+        if (ret?.code === 200) {
+          const failed = ret?.data?.failed_files ?? {};
+          const failedCount = typeof failed === 'object' ? Object.keys(failed).length : 0;
+          toast((ret.msg || '文件删除完成') + (failedCount ? `（失败 ${failedCount} 个）` : ''));
+        } else {
+          toast('删除失败：' + (ret?.msg || '未知错误'), false);
+        }
+      } catch (e) {
+        toast('删除失败：' + e.message, false);
+      }
+    };
+
+    // ===== 文件列表（按 {code,msg,data:[string]} 渲染） =====
+    document.getElementById('btnListFiles').onclick = async () => {
+      const name = document.getElementById('listKb').value.trim();
+      if (!name) return toast('请输入知识库名称', false);
+
+      const tbody = document.getElementById('filesTbody');
+      tbody.innerHTML = '<tr><td class="py-3 text-gray-500" colspan="3">加载中...</td></tr>';
+
+      try {
+        const raw = await fetchJSON(API.listFiles + '?knowledge_base_name=' + encodeURIComponent(name));
+        console.debug('list_files raw:', raw);
+
+        const files = Array.isArray(raw?.data) ? raw.data : (Array.isArray(raw) ? raw : []);
+        if (files.length === 0) {
+          tbody.innerHTML = '<tr><td class="py-3 text-gray-500" colspan="3">暂无数据</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = files.map(nameOrObj => {
+          const filename = typeof nameOrObj === 'string'
+            ? nameOrObj
+            : (nameOrObj.filename || nameOrObj.file_name || nameOrObj.doc_name || nameOrObj.name || '-');
+          return `
+            <tr class="border-b last:border-0">
+              <td class="py-2 pr-4 font-medium">${filename}</td>
+              <td class="py-2 pr-4 text-right">-</td>
+              <td class="py-2 pr-4">-</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td class="py-3 text-rose-600" colspan="3">获取失败：${e.message}</td></tr>`;
+      }
+    };
+
+    // ===== 查询（直接数组返回）=====
+    const qScore = document.getElementById('qScore');
+    const qScoreVal = document.getElementById('qScoreVal');
+    qScore.addEventListener('input', () => qScoreVal.textContent = (+qScore.value).toFixed(2));
+
+    document.getElementById('btnQuery').onclick = async () => {
+      const name = document.getElementById('qKb').value.trim();
+      const query = document.getElementById('qText').value.trim();
+      const top_k = parseInt(document.getElementById('qTopK').value || '3', 10);
+      const score_threshold = parseFloat(document.getElementById('qScore').value);
+      const file_name = document.getElementById('qFileName').value.trim();
+      const metaRaw = document.getElementById('qMeta').value.trim();
+      const ul = document.getElementById('qResults');
+
+      if (!name || !query) return toast('请输入知识库名称和查询语句', false);
+
+      let metadata = {};
+      if (metaRaw) {
+        try {
+          metadata = JSON.parse(metaRaw);
+          if (metadata === null || typeof metadata !== 'object') {
+            return toast('metadata 必须是 JSON 对象', false);
+          }
+        } catch (e) {
+          return toast('metadata 不是合法的 JSON', false);
+        }
+      }
+
+      const payload = {
+        query,
+        knowledge_base_name: name,
+        top_k,
+        score_threshold,
+        file_name,
+        metadata
+      };
+      console.debug('search_docs payload:', payload);
+
+      ul.innerHTML = '<li class="text-gray-500">检索中...</li>';
+
+      try {
+        const raw = await fetchJSON(API.query, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        console.debug('search_docs raw:', raw);
+
+        const arr = Array.isArray(raw) ? raw
+                  : (Array.isArray(raw?.data) ? raw.data : []);
+
+        if (arr.length === 0) {
+          ul.innerHTML = '<li class="text-gray-500">暂无结果</li>';
+          return;
+        }
+
+        ul.innerHTML = arr.map(r => {
+          const text = r.page_content || r.text || r.content || '';
+          const score = r.score;
+          const scoreText = (typeof score === 'number' && score?.toFixed) ? score.toFixed(4) : (score ?? '-');
+          const source = r.metadata?.source || r.source || '';
+          const rid = r.id || r.metadata?.pk || '';
+
+          return `
+            <li class="p-3 rounded-xl border">
+              <div class="flex items-center justify-between text-xs text-gray-500">
+                <span>score: ${scoreText}</span>
+                <span class="truncate">${source ? '来源：' + source : ''}</span>
+              </div>
+              <div class="mt-2 leading-relaxed whitespace-pre-wrap">${text}</div>
+              ${rid ? `<div class="mt-2 text-[11px] text-gray-400">id: ${rid}</div>` : ''}
+            </li>
+          `;
+        }).join('');
+      } catch (e) {
+        ul.innerHTML = `<li class="text-rose-600">查询失败：${e.message}</li>`;
+      }
+    };
+  </script>
+</body>
+</html>

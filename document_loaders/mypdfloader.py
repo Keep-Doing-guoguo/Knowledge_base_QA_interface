@@ -43,6 +43,6 @@ class RapidOCRPDFLoader(UnstructuredFileLoader):
 
 
 if __name__ == "__main__":
-    loader = RapidOCRPDFLoader(file_path="/Volumes/PSSD/未命名文件夹/donwload/创建知识库数据库/knowledge_base/samples/content/test_files/langchain.pdf")
+    loader = RapidOCRPDFLoader(file_path="/Volumes/PSSD/未命名文件夹/donwload/创建知识库数据库/langchain.pdf")
     docs = loader.load()
     print(docs)

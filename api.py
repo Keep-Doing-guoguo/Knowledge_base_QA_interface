@@ -14,14 +14,12 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import argparse
 import uvicorn
-from fastapi import Body
-from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 
 
 from server.embeddings_api import embed_texts_endpoint
 
-from server.utils import (BaseResponse, ListResponse, FastAPI, MakeFastAPIOffline,get_prompt_template)
+from server.utils import (BaseResponse, ListResponse, FastAPI, MakeFastAPIOffline)
 from typing import List, Literal
 
 async def document():
@@ -55,45 +53,15 @@ def mount_app_routes(app: FastAPI, run_mode: str = None):
 
 def mount_knowledge_routes(app: FastAPI):
     from server.chat.knowledge_base_chat import knowledge_base_chat
-    from server.knowledge_base.kb_api import list_kbs, create_kb, delete_kb
-    from server.knowledge_base.kb_doc_api import (list_files, upload_docs, delete_docs,
-                                                update_docs, download_doc, recreate_vector_store,
-                                                search_docs, DocumentWithVSId, update_info,
-                                                update_docs_by_id,)
+    from server.knowledge_base.kb_doc_api import ( upload_docs
+
+                                                )
 
     app.post("/chat/knowledge_base_chat",
              tags=["Chat"],
              summary="与知识库对话")(knowledge_base_chat)#该接口可以使用，但是并没有检索到内容。
 
-    # Tag: Knowledge Base Management
-    app.get("/knowledge_base/list_knowledge_bases",
-            tags=["Knowledge Base Management"],
-            response_model=ListResponse,
-            summary="获取知识库列表")(list_kbs)#该接口可以正常使用
 
-    app.post("/knowledge_base/create_knowledge_base",
-             tags=["Knowledge Base Management"],
-             response_model=BaseResponse,
-             summary="创建知识库"
-             )(create_kb)#该接口创建好知识库后，会添加到数据库里面。该接口可以正常使用。
-
-    app.post("/knowledge_base/delete_knowledge_base",
-             tags=["Knowledge Base Management"],
-             response_model=BaseResponse,
-             summary="删除知识库"
-             )(delete_kb)#从数据库中删除该知识库。该接口可以正常使用。
-
-    app.get("/knowledge_base/list_files",
-            tags=["Knowledge Base Management"],
-            response_model=ListResponse,
-            summary="获取知识库内的文件列表"
-            )(list_files)#该接口可以正常使用
-
-    app.post("/knowledge_base/search_docs",
-             tags=["Knowledge Base Management"],
-             response_model=List[DocumentWithVSId],
-             summary="搜索知识库；通过问题，在知识库中检索到相关的信息。"
-             )(search_docs)#该接口可以正常使用
 
     app.post("/knowledge_base/upload_docs",
              tags=["Knowledge Base Management"],
@@ -101,26 +69,7 @@ def mount_knowledge_routes(app: FastAPI):
              summary="上传文件到知识库，并/或进行向量化"
              )(upload_docs)#该接口可以正常使用；针对的是单线程的情况。
 
-    app.post("/knowledge_base/delete_docs",
-             tags=["Knowledge Base Management"],
-             response_model=BaseResponse,
-             summary="删除知识库内指定文件"
-             )(delete_docs)#该接口可以正常使用
 
-    app.post("/knowledge_base/update_info",
-             tags=["Knowledge Base Management"],
-             response_model=BaseResponse,
-             summary="更新知识库介绍"
-             )(update_info)#该接口可以正常使用
-    app.post("/knowledge_base/update_docs",
-             tags=["Knowledge Base Management"],
-             response_model=BaseResponse,
-             summary="更新现有文件到知识库"
-             )(update_docs)#该接口可以正常使用，该接口被upload_docs调用
-
-    app.get("/knowledge_base/download_doc",
-            tags=["Knowledge Base Management"],
-            summary="下载对应的知识文件")(download_doc)#该接口将会从服务器下载文件；该接口可以正常使用；
 
 
 def run_api(host, port, **kwargs):
@@ -138,7 +87,7 @@ def run_api(host, port, **kwargs):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='嘿嘿嘿',
                                      description='基于本地知识库的问答')
-    parser.add_argument("--host", type=str, default="0.0.0.0")
+    parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=7861)
     parser.add_argument("--ssl_keyfile", type=str)
     parser.add_argument("--ssl_certfile", type=str)

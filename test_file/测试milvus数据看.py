@@ -7,5 +7,5 @@
 @source from: 
 """
 from pymilvus import connections
-connections.connect("default", host="", port="9997")
+connections.connect("default", host="10.40.100.16", port="9997")
 print('debug')

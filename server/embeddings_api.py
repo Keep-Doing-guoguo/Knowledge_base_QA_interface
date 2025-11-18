@@ -7,31 +7,26 @@
 @source from: 
 """
 from langchain.docstore.document import Document
-from configs import logger
+from configs import logger,EMBEDDING_MODEL,EMBEDDING_API_KEY
 from server.utils import BaseResponse
 from fastapi import Body
 from fastapi.concurrency import run_in_threadpool
 from typing import Dict, List
 
-import asyncio
 import httpx
-from pydantic import BaseModel, Field
-from typing import List, Any
+
 
 # === 配置 ===
 EMBEDDING_API_URL = "https://api.siliconflow.cn/v1/embeddings"
-API_KEY = "sk-xuabveedydrxkanzbbiwienzsceltpsralfdblujmxiuzbcz"
-EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"
 
 from typing import List, Any
-from pydantic import BaseModel, Field
 import requests
 
 # 假设这个是你已有的函数
 def call_embedding(prompt):
     url = "https://api.siliconflow.cn/v1/embeddings"
     headers = {
-        "Authorization": "Bearer sk-xuabveedydrxkanzbbiwienzsceltpsralfdblujmxiuzbcz",
+        "Authorization": f"Bearer {EMBEDDING_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
@@ -69,7 +64,7 @@ async def async_call_embedding(text: str, client: httpx.AsyncClient):
             "encoding_format": "float"
         }
         headers = {
-            "Authorization": f"Bearer {API_KEY}",
+            "Authorization": f"Bearer {EMBEDDING_API_KEY}",
             "Content-Type": "application/json"
         }
         resp = await client.post(EMBEDDING_API_URL, headers=headers, json=payload)

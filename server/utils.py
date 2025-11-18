@@ -76,23 +76,6 @@ class ListResponse(BaseResponse):#用于构建统一的响应对象。无论成�
             }
         }
 
-def torch_gc():
-    try:
-        import torch
-        if torch.cuda.is_available():
-            # with torch.cuda.device(DEVICE):
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
-        elif torch.backends.mps.is_available():
-            try:
-                from torch.mps import empty_cache
-                empty_cache()
-            except Exception as e:
-                msg = ("如果您使用的是 macOS 建议将 pytorch 版本升级至 2.0.0 或更高版本，"
-                       "以支持及时清理 torch 产生的内存占用。")
-                print(msg)
-    except Exception:
-        ...
 
 
 def MakeFastAPIOffline(
@@ -205,4 +188,23 @@ def run_in_thread_pool(
             yield obj.result()
 
 
+# ✅ 测试主函数
+if __name__ == "__main__":
+    # 1️⃣ 初始化模型
+    model = get_ChatOpenAI(
+        model_name="qwen-plus",
+        temperature=0.7,
+        max_tokens=512,
+        streaming=False,  # 如果要流式输出可以改成 True
+    )
 
+    # 2️⃣ 构造对话
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "请用一句话介绍中国的人工智能发展现状。"}
+    ]
+
+    # 3️⃣ 直接调用 invoke
+    response = model.invoke(messages)
+    print("\n✅ 模型输出内容：")
+    print(response.content)

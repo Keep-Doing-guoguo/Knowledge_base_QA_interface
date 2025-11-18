@@ -33,7 +33,6 @@ class KnowledgeFileModel(Base):
         return f"<KnowledgeFile(id='{self.id}', file_name='{self.file_name}', file_ext='{self.file_ext}', kb_name='{self.kb_name}', document_loader_name='{self.document_loader_name}', text_splitter_name='{self.text_splitter_name}', file_version='{self.file_version}', create_time='{self.create_time}')>"
 '''
 1	llm/img/大模型指令对齐训练原理-幕布图片-349153-657791.jpg	.jpg	samples	RapidOCRLoader	ChineseRecursiveTextSplitter	1	1704024935	152807	0	2	2024-12-30 09:07:44
-
 '''
 
 class FileDocModel(Base):
@@ -52,4 +51,7 @@ class FileDocModel(Base):
 '''
 1	samples	llm/img/大模型指令对齐训练原理-幕布图片-349153-657791.jpg	f4c43481-0344-4dee-9a4f-7f84b29c0c48	{"source": "llm/img/大模型指令对齐训练原理-幕布图片-349153-657791.jpg"}
 这个数据表存放的是所有的文件
+
+
+
 '''

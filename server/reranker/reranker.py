@@ -13,7 +13,7 @@ from pydantic import Field, PrivateAttr
 from langchain.schema import Document
 from langchain_core.callbacks.base import Callbacks
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
-
+from configs.model_config import EMBEDDING_API_KEY
 
 class LangchainReranker(BaseDocumentCompressor):
     """Document compressor that uses external rerank API (e.g. Cohere, SiliconFlow)."""
@@ -47,7 +47,7 @@ class LangchainReranker(BaseDocumentCompressor):
         """
         url = "https://api.siliconflow.cn/v1/rerank"
         headers = {
-            "Authorization": "Bearer sk-xuabveedydrxkanzbbiwienzsceltpsralfdblujmxiuzbcz",
+            "Authorization": f"Bearer {EMBEDDING_API_KEY}",
             "Content-Type": "application/json"
         }
         payload = {

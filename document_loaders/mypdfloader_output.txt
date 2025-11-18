@@ -1,0 +1,25 @@
+See discussions, stats, and author profiles for this publication at: https://www.researchgate.net/publication/372669736
+
+Creating Large Language Model Applications Utilizing LangChain: A Primer on
+
+Developing LLM Apps Fast\n\nArticle\xa0\xa0in\xa0\xa0International Conference on Applied Engineering and Natural Sciences · July 2023\n\nDOI: 10.59287/icaens.1127\n\nCITATIONS\n\n0\n\nREADS\n\n47\n\n
+
+2 authors:\n\nSome of the authors of this publication are also working on these related projects:
+
+\n\nTHALIA: Test Harness for the Assessment of Legacy Information Integration Approaches View project\n\nAnalysis of Feroresonance with Signal Processing Technique View project\n\nOguzhan Topsakal
+
+\n\nFlorida Polytechnic University\n\n29 PUBLICATIONS\xa0\xa0\xa0155 CITATIONS\n\nSEE PROFILE\n\nT. Cetin Akinci
+
+\n\nIstanbul Technical University & University of California Riverside\n\n116 PUBLICATIONS\xa0\xa0\xa0745 CITATIONS\n\nSEE PROFILE
+
+\n\nAll content following this page was uploaded by Oguzhan Topsakal on 07 August 2023.\n\nThe user has requested enhancement of the downloaded file.\n\nProject
+
+\n\nAll Sciences Proceedings\n\nhttp://as-proceeding.com/\n\n5th International Conference on Applied\n\nEngineering and Natural Sciences\n\nJuly 10-12, 2023 : Konya, Turkey
+
+
+\n\nhttps://www.icaens.com/\n\n© 2023 Published by All Sciences Proceedings\n\n1050\n\nCreating Large Language Model Applications Utilizing LangChain: A\n\nPrimer on Developing LLM Apps Fast
+
+\n\nOguzhan Topsakal1*, and Tahir Cetin Akinci 2\n\n1Computer Science Department, Florida Polytechnic University, FL, USA\n\n2WCGEC, University of California at Riverside, CA, USA
+
+\n\n(otopsakal@floridapoly.edu) Email of the corresponding author\n\nAbstract –
+

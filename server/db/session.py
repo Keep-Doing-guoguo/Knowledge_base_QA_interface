@@ -26,20 +26,20 @@ def session_scope() -> Session:
 def with_session(func):
     @wraps(func)
     def wrapper(*args,**kwargs):
-        print(f'函数{func.__name__}被调用')
-        print(f"位置参数：{args}")
-        print(f"关键字参数：{kwargs}")
+        # print(f'函数{func.__name__}被调用')
+        # print(f"位置参数：{args}")
+        # print(f"关键字参数：{kwargs}")
 
         with session_scope() as session:
             try:
                 result = func(session,*args,**kwargs)
                 session.commit()
-                print(f"函数{func.__name__} 返回值：{result}")
+                #print(f"函数{func.__name__} 返回值：{result}")
                 return result
 
             except Exception as e:
                 session.rollback()
-                print(f"函数{func.__name__} 出现异常:{e}")
+                #print(f"函数{func.__name__} 出现异常:{e}")
                 raise
     return wrapper
 
